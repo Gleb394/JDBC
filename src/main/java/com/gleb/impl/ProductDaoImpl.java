@@ -1,10 +1,7 @@
 package com.gleb.impl;
 
-import com.gleb.Factory;
 import com.gleb.dao.AbstractDao;
-import com.gleb.dao.CategoryDao;
 import com.gleb.dao.ProductDao;
-import com.gleb.model.Category;
 import com.gleb.model.Product;
 
 import java.sql.*;
@@ -17,6 +14,7 @@ public class ProductDaoImpl extends AbstractDao<Product> implements ProductDao {
         super(connection);
     }
 
+    @Override
     public void save(Product product) {
         String query = "INSERT INTO PRODUCTS (NAME, PRICE, DESCRIPTION) VALUES (?, ?, ?);";
 
@@ -32,6 +30,7 @@ public class ProductDaoImpl extends AbstractDao<Product> implements ProductDao {
         }
     }
 
+    @Override
     public Product findByName(String name) {
         String query = "SELECT ID, NAME, PRICE, DESCRIPTION FROM PRODUCTS WHERE NAME = ?";
         PreparedStatement preparedStatement;
@@ -47,6 +46,12 @@ public class ProductDaoImpl extends AbstractDao<Product> implements ProductDao {
         }
         return product;
     }
+
+    @Override
+    public Product findById(Long id) {
+        return null;
+    }
+
 
     public List<Product> findAll() {
         String query = "SELECT ID, NAME, PRICE, DESCRIPTION FROM PRODUCTS";
@@ -74,23 +79,5 @@ public class ProductDaoImpl extends AbstractDao<Product> implements ProductDao {
                 resultSet.getDouble(3),
                 resultSet.getString(4)
         );
-    }
-
-    public static void main(String[] args) {
-/*
-        ProductDaoImpl dao = new ProductDaoImpl(Factory.getConnection());
-        Product product1 = new Product("SAMSUNG", 699.0, "SAMSUNG PHONE");
-        Product product2 = new Product("iMac", 4699.0, "Expensive environment");
-        Product product3 = new Product("Shoes", 25.0, "Brown Shoes");
-        dao.save(product1);
-        dao.save(product2);
-        dao.save(product3);
-        List<Product> result = dao.findAll();
-        System.out.println(result);
-*/
-        CategoryDao categoryDao = new CategoryDaoImpl(Factory.getConnection());
-
-        Category category = categoryDao.findById(1L);
-        System.out.println(category);
     }
 }

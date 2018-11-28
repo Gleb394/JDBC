@@ -8,10 +8,18 @@ import java.util.List;
 @NameTable(name = "CATEGORIES")
 public class Category {
 
+    @NameColumn(name = "ID")
     private Long id;
     @NameColumn(name = "CATEGORY_NAME")
     private String name;
     private List<Product> products;
+
+    public Category() {
+    }
+
+    public Category(String name) {
+        this.name = name;
+    }
 
     public Category(Long id, String name, List<Product> products) {
         this.id = id;

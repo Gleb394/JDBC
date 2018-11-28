@@ -6,6 +6,7 @@ import com.gleb.annotation.NameTable;
 @NameTable(name = "PRODUCTS")
 public class Product {
 
+    @NameColumn(name = "ID")
     private Long id;
     @NameColumn(name = "NAME")
     private String name;

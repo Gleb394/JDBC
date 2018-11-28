@@ -14,4 +14,24 @@
         <url-pattern>/servlet/*</url-pattern>
     </servlet-mapping>
 
+    <filter>
+        <filter-name>login-register-filter</filter-name>
+        <filter-class>com.gleb.web.filter.LoginRegisterFilter</filter-class>
+    </filter>
+
+    <filter-mapping>
+        <filter-name>login-register-filter</filter-name>
+        <servlet-name>main</servlet-name>
+    </filter-mapping>
+
+    <filter>
+        <filter-name>user-filter</filter-name>
+        <filter-class>com.gleb.web.filter.UserFilter</filter-class>
+    </filter>
+
+    <filter-mapping>
+        <filter-name>user-filter</filter-name>
+        <servlet-name>main</servlet-name>
+    </filter-mapping>
+
 </web-app>

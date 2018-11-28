@@ -6,36 +6,22 @@ import com.gleb.annotation.NameTable;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
-public class ReflectParseClass<T> {
+public class ReflectParseClass {
 
-    private int counter = 0;
-
-    public int getCounter() {
-        return counter;
-    }
-
-    public void setCounter(int counter) {
-        this.counter = counter;
-    }
-
-    public String ParseTableName(Class c) {
-            Annotation[] annotations = c.getAnnotations();
-            for (Annotation annotation : annotations) {
-                annotation = c.getAnnotation(NameTable.class);
-                NameTable nameTable = (NameTable) annotation;
-                return nameTable.name();
-            }
+    public String parseTableName(Class c) {
+        Annotation[] annotations = c.getAnnotations();
+        for (Annotation annotation : annotations) {
+            annotation = c.getAnnotation(NameTable.class);
+            NameTable nameTable = (NameTable) annotation;
+            return nameTable.name();
+        }
         return null;
     }
 
-    public String ParseColumnName(Class c, String marker) {
-        String buffer;
-        String nameColumns = null;
-        String space = ", ";
-        String markers = " = ?";
+    public List<String> parseAnnotationName(Class c) {
+        List<String> nameAnnotation = new ArrayList<>();
 
         Field[] fields = c.getDeclaredFields();
         for (Field field : fields) {
@@ -43,58 +29,59 @@ public class ReflectParseClass<T> {
             for (Annotation annotation : annotations) {
                 annotation = field.getAnnotation(NameColumn.class);
                 NameColumn nameColumn = (NameColumn) annotation;
-                if (counter == 0) {
-                    if (marker.equals("space")) {
-                        nameColumns = nameColumn.name();
-                        counter++;
-                    } else if (marker.equals("markers")) {
-                        nameColumns = nameColumn.name() + markers;
-                        counter++;
-                    }
-                } else {
-                    if (marker.equals("space")) {
-                        buffer = nameColumn.name();
-                        nameColumns += space + buffer;
-                        counter++;
-                    } else if (marker.equals("markers")) {
-                        buffer = nameColumn.name();
-                        nameColumns += space + buffer + markers;
-                        counter++;
-                    }
-                }
+                if (!nameColumn.name().startsWith("ID") || !nameColumn.name().endsWith("ID"))
+                    nameAnnotation.add(nameColumn.name());
             }
         }
-        return nameColumns;
+        return nameAnnotation;
     }
 
-    public List<Method> takeGetOrSetMethod(Class c , String nameMethod) {
+    public String AnnotationNameId(Class c) {
+        String id = null;
+
+        Field[] fields = c.getDeclaredFields();
+        for (Field field : fields) {
+            Annotation[] annotations = field.getDeclaredAnnotations();
+            for (Annotation annotation : annotations) {
+                annotation = field.getAnnotation(NameColumn.class);
+                NameColumn nameColumn = (NameColumn) annotation;
+                if (nameColumn.name().startsWith("ID") || nameColumn.name().endsWith("ID"))
+                    id = nameColumn.name();
+                    return id;
+            }
+        }
+        return null;
+    }
+
+    public Method getMethod(Class c, int counter, String nameMethod) {
+        Field[] fields = c.getDeclaredFields();
+        return takeGetOrSetMethod(c, fields[counter], nameMethod);
+    }
+
+    private Method takeGetOrSetMethod(Class c , Field field, String nameMethod) {
        Method [] methods = c.getMethods();
-       int counterGet = 0;
-       int counterSet = 0;
-       List<Method> get = new ArrayList<>();
-       List<Method> set = new ArrayList<>();
 
        for (Method method : methods) {
-           if (isGetter(method)) {
-               get.add(counterGet, method);
-               counterGet++;
+           if (method.getName().toUpperCase().endsWith(field.getName().toUpperCase())) {
+               if (isGetter(method, nameMethod)) {
+                   return method;
+               }
+               if (isSetter(method, nameMethod)) {
+                   return method;
+               }
            }
-           if (isSetter(method)) {
-               set.add(counterSet ,method);
-               counterSet++;
-           }
-       }
-       if (nameMethod.equals("get")) {
-           return get;
-       }
-       if (nameMethod.equals("set")) {
-           return set;
        }
        return null;
     }
 
-    private static boolean isGetter(Method method){
-        if (!method.getName().startsWith("get")) {
+    private static boolean isGetter(Method method, String nameMethod){
+        if (!method.getName().startsWith(nameMethod)) {
+            return false;
+        }
+        if (method.getName().endsWith("Id")) {
+            return false;
+        }
+        if (method.getName().endsWith("Class")) {
             return false;
         }
         if (method.getParameterTypes().length != 0) {
@@ -106,8 +93,8 @@ public class ReflectParseClass<T> {
         return true;
     }
 
-    private static boolean isSetter(Method method){
-        if (!method.getName().startsWith("set")) {
+    private static boolean isSetter(Method method, String nameMethod){
+        if (!method.getName().startsWith(nameMethod)) {
             return false;
         }
         if (method.getParameterTypes().length != 1) {

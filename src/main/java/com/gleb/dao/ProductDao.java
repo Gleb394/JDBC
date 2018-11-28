@@ -10,6 +10,8 @@ public interface ProductDao extends GenericDao<Product> {
 
     Product findByName(String name);
 
+    Product findById(Long id);
+
     List<Product> findAll();
 }
 

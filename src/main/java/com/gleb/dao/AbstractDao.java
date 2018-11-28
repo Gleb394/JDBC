@@ -5,13 +5,12 @@ import com.gleb.reflect.ReflectParseClass;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.lang.reflect.ParameterizedType;
+import java.sql.*;
+import java.util.ArrayList;
 import java.util.List;
 
-public abstract class AbstractDao<T>  implements GenericDao<T> {
+public abstract class AbstractDao<T> {
     private ReflectParseClass reflectParseClass = new ReflectParseClass();
     private QueryDao queryDao = new QueryDao();
     private Class<?> clazz;
@@ -20,44 +19,118 @@ public abstract class AbstractDao<T>  implements GenericDao<T> {
 
     public AbstractDao(Connection connection) {
         this.connection = connection;
+        this.clazz = (Class<?>) ((ParameterizedType) getClass().getGenericSuperclass()).getActualTypeArguments()[0];
     }
 
-
-    public void add(T t) throws SQLException {
+    public void add(T t) {
         PreparedStatement statement;
-        clazz = t.getClass();
-
-        statement = connection.prepareStatement(queryDao.queryAdd(t.getClass()));
-        for (int i = 0; i < reflectParseClass.takeGetOrSetMethod(t.getClass(), "get").size(); i++) {
-            Method method = (Method) reflectParseClass.takeGetOrSetMethod(t.getClass(), "get").get(i);
-            statement.setObject(i, method);
+        int size = reflectParseClass.parseAnnotationName(t.getClass()).size();
+        try {
+            statement = connection.prepareStatement(queryDao.queryAdd(t.getClass()));
+            for (int i = 0; i < size; i++) {
+                Method method = reflectParseClass.getMethod(clazz, i, "get");
+                statement.setObject(i + 1, method.invoke(t));
+            }
+            statement.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        } catch (IllegalAccessException e) {
+            e.printStackTrace();
+        } catch (InvocationTargetException e) {
+            e.printStackTrace();
         }
     }
 
-    public T get(long id, T  t) throws SQLException, InvocationTargetException, IllegalAccessException {
-        clazz = t.getClass();
+    public T get(Long id) {
+        T t = null;
         PreparedStatement statement;
-        statement = connection.prepareStatement(queryDao.queryGet(clazz));
-        statement.setLong(1, id);
-        ResultSet resultSet = statement.executeQuery();
-
-        for (int i = 0; i < reflectParseClass.takeGetOrSetMethod(clazz, "set").size(); i++) {
-            Method method = (Method) reflectParseClass.takeGetOrSetMethod(clazz, "set").get(i);
-            method.invoke(resultSet.getObject(i));
+        try {
+            statement = connection.prepareStatement(queryDao.queryGet(clazz));
+            statement.setLong(1, id);
+            ResultSet rs = statement.executeQuery();
+            t = (T) clazz.newInstance();
+            int size = reflectParseClass.parseAnnotationName(t.getClass()).size();
+            while (rs.next()) {
+                for (int i = 0; i <= size; i++) {
+                    Method method = reflectParseClass.getMethod(t.getClass(), i, "set");
+                    method.invoke(t, rs.getObject(i + 1));
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        } catch (IllegalAccessException e) {
+            e.printStackTrace();
+        } catch (InstantiationException e) {
+            e.printStackTrace();
+        } catch (InvocationTargetException e) {
+            e.printStackTrace();
         }
-
-        return null;
+        return t;
     }
 
-    public void update(long id) {
-
+    public void update(Long id) {
+        T t;
+        PreparedStatement statement;
+        try {
+            statement = connection.prepareStatement(queryDao.queryUpdate(clazz));
+            statement.setLong(1, id);
+            ResultSet rs = statement.executeQuery();
+            t = (T) clazz.newInstance();
+            int size = reflectParseClass.parseAnnotationName(t.getClass()).size();
+            while (rs.next()) {
+                for (int i = 0; i <= size; i++) {
+                    Method method = reflectParseClass.getMethod(t.getClass(), i, "get");
+                    statement.setObject(i + 1, method.invoke(t));
+                    statement.executeUpdate();
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        } catch (IllegalAccessException e) {
+            e.printStackTrace();
+        } catch (InstantiationException e) {
+            e.printStackTrace();
+        } catch (InvocationTargetException e) {
+            e.printStackTrace();
+        }
     }
 
-    public void remove(long id) {
-
+    public void remove(Long id) {
+        PreparedStatement statement;
+        try {
+            statement = connection.prepareStatement(queryDao.queryGet(clazz));
+            statement.setLong(1, id);
+            statement.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
     }
 
     public List<T> getAll() {
-        return null;
+        List<T> list = new ArrayList<>();
+        T t;
+        PreparedStatement statement;
+        try {
+            statement = connection.prepareStatement(queryDao.queryGetAll(clazz));
+            ResultSet rs = statement.executeQuery();
+            t = (T) clazz.newInstance();
+            int size = reflectParseClass.parseAnnotationName(t.getClass()).size();
+            while (rs.next()) {
+                for (int i = 0; i <= size; i++) {
+                    Method method = reflectParseClass.getMethod(t.getClass(), i, "set");
+                    method.invoke(t, rs.getObject(i + 1));
+                }
+                list.add(t);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        } catch (IllegalAccessException e) {
+            e.printStackTrace();
+        } catch (InstantiationException e) {
+            e.printStackTrace();
+        } catch (InvocationTargetException e) {
+            e.printStackTrace();
+        }
+        return list;
     }
 }

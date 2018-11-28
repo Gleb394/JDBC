@@ -22,12 +22,21 @@
 
 </head>
 <body>
+
 <%@include file="header.jsp" %>
 
 <div>
-    <h1>Home Page!!!</h1>
+    <h1>Categories</h1>
+</div>
 
-    <h3>Hello ${user.firstName}</h3>
+<div>
+    <c:forEach var="c" items="${categories}">
+        <h3>Category name:
+            <a href="<c:url value="/servlet/category?c_id=${c.id}"/>">
+                <c:out value="${c.name}"/>
+            </a>
+        </h3>
+    </c:forEach>
 </div>
 
 </body>

@@ -6,13 +6,13 @@ import java.util.List;
 
 public interface GenericDao<T> {
 
-    void add(T t) throws SQLException;
+    void add(T t);
 
-    T get(long id, T t) throws SQLException, InvocationTargetException, IllegalAccessException;
+    T get(Long id);
 
-    void update(long id);
+    void update(Long id);
 
-    void remove(long id);
+    void remove(Long id);
 
     List<T> getAll();
 }
